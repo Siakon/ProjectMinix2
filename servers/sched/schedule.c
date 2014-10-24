@@ -7,6 +7,7 @@
  *   do_nice		  Request to change the nice level on a proc
  *   init_scheduling      Called from main.c to set up/prepare scheduling
  */
+
 #include "sched.h"
 #include "schedproc.h"
 #include <assert.h>
@@ -16,6 +17,7 @@
 
 static timer_t sched_timer;
 static unsigned balance_timeout;
+
 
 #define BALANCE_TIMEOUT	5 /* how often to balance queues in seconds */
 
@@ -42,6 +44,7 @@ static void balance_queues(struct timer *tp);
 #define cpu_is_available(c)	(cpu_proc[c] >= 0)
 
 #define DEFAULT_USER_TIME_SLICE 200
+
 
 /* processes created by RS are sysytem processes */
 #define is_system_proc(p)	((p)->parent == RS_PROC_NR)
@@ -91,14 +94,26 @@ int do_noquantum(message *m_ptr)
 {
 	register struct schedproc *rmp;
 	int rv, proc_nr_n;
-
+	
 	if (sched_isokendpt(m_ptr->m_source, &proc_nr_n) != OK) {
 		printf("SCHED: WARNING: got an invalid endpoint in OOQ msg %u.\n",
 		m_ptr->m_source);
 		return EBADEPT;
 	}
-
 	rmp = &schedproc[proc_nr_n];
+	
+	if(rmp->period_counter == NUM_OF_SMPLS){
+		float count = 0;
+		for(int j=0; j < NUM_OF_SMPLS; j++){
+			count += rmp->curr_periods[j];
+		}
+		rmp->dyn_period = count/(float)NUM_OF_SMPLS;
+		rmp->period_counter++;
+	}else if(rmp->period_counter < NUM_OF_SMPLS ){
+		rmp->curr_periods[rmp->period_counter] = m_ptr->SCHEDULING_ACNT_QUEUE + rmp->orig_quantum;
+		rmp->period_counter++;
+	}
+	
 	if (rmp->priority < MIN_USER_Q) {
 		rmp->priority += 1; /* lower priority */
 	}
@@ -143,7 +158,7 @@ int do_start_scheduling(message *m_ptr)
 {
 	register struct schedproc *rmp;
 	int rv, proc_nr_n, parent_nr_n;
-	
+
 	/* we can handle two kinds of messages here */
 	assert(m_ptr->m_type == SCHEDULING_START || 
 		m_ptr->m_type == SCHEDULING_INHERIT);
@@ -196,6 +211,7 @@ int do_start_scheduling(message *m_ptr)
 		 * from the parent */
 		rmp->priority   = rmp->max_priority;
 		rmp->time_slice = (unsigned) m_ptr->SCHEDULING_QUANTUM;
+		//rmp->orig_quantum = (unsigned) m_ptr->SCHEDULING_QUANTUM;
 		break;
 		
 	case SCHEDULING_INHERIT:
@@ -208,6 +224,7 @@ int do_start_scheduling(message *m_ptr)
 
 		rmp->priority = schedproc[parent_nr_n].priority;
 		rmp->time_slice = schedproc[parent_nr_n].time_slice;
+		//rmp->orig_quantum = schedproc[parent_nr_n].time_slice;
 		break;
 		
 	default: 
@@ -322,7 +339,7 @@ static int schedule_process(struct schedproc * rmp, unsigned flags)
 		new_quantum, new_cpu)) != OK) {
 		printf("PM: An error occurred when trying to schedule %d: %d\n",
 		rmp->endpoint, err);
-	}
+	}	
 
 	return err;
 }
@@ -334,9 +351,20 @@ static int schedule_process(struct schedproc * rmp, unsigned flags)
 
 void init_scheduling(void)
 {
+	/* Create a pointer temproc that points to the schedproc struct */
+	register struct schedproc *temproc;
+	
 	balance_timeout = BALANCE_TIMEOUT * sys_hz();
 	init_timer(&sched_timer);
 	set_timer(&sched_timer, balance_timeout, balance_queues, 0);
+	
+	/* Initialize the counters for the periods */
+	for(int i=0; i < NR_PROCS; i++){
+		temproc = &schedproc[i];
+		
+		temproc->period_counter = 0;
+		
+	}
 }
 
 /*===========================================================================*

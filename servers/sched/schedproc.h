@@ -15,6 +15,8 @@
 #define CONFIG_MAX_CPUS 1
 #endif
 
+#define NUM_OF_SMPLS 100
+
 /**
  * We might later want to add more information to this table, such as the
  * process owner, process group or cpumask.
@@ -24,6 +26,12 @@ EXTERN struct schedproc {
 	endpoint_t endpoint;	/* process endpoint id */
 	endpoint_t parent;	/* parent endpoint id */
 	unsigned flags;		/* flag bits */
+	
+	unsigned curr_periods[NUM_OF_SMPLS];
+	unsigned orig_quantum;
+	int period_counter;	
+	unsigned dyn_period;
+	int counter_init;	
 
 	/* User space scheduling */
 	unsigned max_priority;	/* this process' highest allowed priority */

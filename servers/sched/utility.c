@@ -8,8 +8,20 @@
  */
 
 #include "sched.h"
+#include <minix/callnr.h>
+#include <signal.h>
+#include <sys/svrctl.h>
 #include <machine/archtypes.h>
+#include <sys/utsname.h>
 #include <sys/resource.h> /* for PRIO_MAX & PRIO_MIN */
+#include <minix/com.h>
+#include <minix/config.h>
+#include <minix/sysinfo.h>
+#include <minix/type.h>
+#include <minix/vm.h>
+#include <string.h>
+#include <lib.h>
+#include <assert.h>
 #include "kernel/proc.h" /* for queue constants */
 #include "schedproc.h"
 
@@ -18,9 +30,38 @@
  *===========================================================================*/
 int no_sys(int who_e, int call_nr)
 {
+  if(call_nr == COMMON_GETSYSINFO){
+	printf("Ton ipiame!!");
+	return(ENOSYS);
+  }
 /* A system call number not implemented by PM has been requested. */
   printf("SCHED: in no_sys, call nr %d from %d\n", call_nr, who_e);
   return(ENOSYS);
+}
+
+/*==========================================================================*
+ *                         do_getsysinfo                                    *
+ *==========================================================================*/
+int do_getsysinfo( message *m_in ){
+	
+	vir_bytes src_addr,dst_addr;
+	size_t len;
+	
+	switch(m_in->SI_WHAT){
+	case SI_PROC_TAB:
+		src_addr = (vir_bytes) schedproc;
+		len = sizeof(struct schedproc) * NR_PROCS;
+		break;
+	default:
+		return(EINVAL);
+	}
+
+	if (len != m_in->SI_SIZE)
+		return(EINVAL);
+
+	
+	dst_addr = (vir_bytes) m_in->SI_WHERE;
+	return sys_datacopy(SELF, src_addr, m_in->m_source, dst_addr, len);
 }
 
 
@@ -67,6 +108,7 @@ int accept_message(message *m_ptr)
 		case PM_PROC_NR:
 		case RS_PROC_NR:
 			return 1;
+		
 			
 	}
 	

@@ -1,0 +1,11 @@
+dmp_pm.c:76:5: error: use of undeclared identifier 'shproc1'; did you mean 'shproc'?
+                j,shproc1[0][j],schedp->dyn_period,schedp->curr_periods[0]);
+                  ^~~~~~~
+                  shproc
+./../sched/schedproc.h:20:12: note: 'shproc' declared here
+EXTERN int shproc[2][NR_PROCS];
+           ^
+dmp_pm.c:75:27: warning: more '%' conversions than data arguments [-Wformat]
+        printf("%d\t%d\t%d\t%d\t%d\n",
+                                ~^
+1 warning and 1 error generated.

@@ -9,11 +9,13 @@
 
 #include "inc.h"
 #include "../pm/mproc.h"
+#include "../sched/schedproc.h"
 #include <timers.h> 
 #include <minix/config.h> 
 #include <minix/type.h> 
 
 struct mproc mproc[NR_PROCS];
+struct schedproc schedproc[NR_PROCS];
 
 /*===========================================================================*
  *				mproc_dmp				     *
@@ -42,11 +44,18 @@ static char *flags_str(int flags)
 void mproc_dmp()
 {
   struct mproc *mp;
-  int i, n=0;
+  struct schedproc *schedp;
+  int i, j, n=0, k=0;
   static int prev_i = 0;
+  static int prev_j = 0;
 
   if (getsysinfo(PM_PROC_NR, SI_PROC_TAB, mproc, sizeof(mproc)) != OK) {
 	printf("Error obtaining table from PM. Perhaps recompile IS?\n");
+	return;
+  }
+
+  if(getsysinfo(SCHED_PROC_NR, SI_PROC_TAB, schedproc,sizeof(schedproc)) != OK){
+	printf("Error obtaining table from SCHED. Perhaps recompile IS?\n");
 	return;
   }
 
@@ -55,18 +64,30 @@ void mproc_dmp()
   for (i=prev_i; i<NR_PROCS; i++) {
   	mp = &mproc[i];
   	if (mp->mp_pid == 0 && i != PM_PROC_NR) continue;
-  	if (++n > 22) break;
-  	printf("%8.8s %4d%4d%4d  %5d %5d %5d  ", 
-  		mp->mp_name, i, mp->mp_parent, mp->mp_tracer, mp->mp_pid, mproc[mp->mp_parent].mp_pid, mp->mp_procgrp);
+  	if (++n > 10) break;
+	printf("%8.8s %d %d %3d  %4d %4d %5d  ", 
+  		mp->mp_name, i, mp->mp_scheduler, mp->mp_endpoint, mp->mp_pid, mproc[mp->mp_parent].mp_pid, mp->mp_procgrp);
   	printf("%2d(%2d)  %2d(%2d)   ",
   		mp->mp_realuid, mp->mp_effuid, mp->mp_realgid, mp->mp_effgid);
   	printf(" %3d  %s  ", 
   		mp->mp_nice, flags_str(mp->mp_flags)); 
   	printf("\n");
   }
+  
+  printf("Proc\t ParentID\t Counter\t Period\t OnePeriod\t Orig Quantum\n");
+  for(j=prev_j; j < NR_PROCS; j++){
+	schedp = &schedproc[j];
+	if(schedp->period_counter == 0) continue;
+	if (++k > 11) break;
+	printf("%d\t %d\t\t %6d\t\t %5u\t %7u\t %10u \n",
+		schedp->endpoint,schedp->parent,schedp->period_counter,schedp->dyn_period,schedp->curr_periods[0],schedp->orig_quantum);
+  }
   if (i >= NR_PROCS) i = 0;
   else printf("--more--\r");
   prev_i = i;
+  if (j >= NR_PROCS) j = 0;
+  else printf("j at: %d" ,j); 
+  prev_j = j;
 }
 
 /*===========================================================================*

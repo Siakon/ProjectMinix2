@@ -35,6 +35,7 @@ int main(void)
 		panic("couldn't get machine info: %d", s);
 	/* Initialize scheduling timers, used for running balance_queues */
 	init_scheduling();
+		
 
 	/* This is SCHED's main loop - get work and do it, forever and forever. */
 	while (TRUE) {
@@ -58,7 +59,7 @@ int main(void)
 
 			goto sendreply;
 		}
-
+		
 		switch(call_nr) {
 		case SCHEDULING_INHERIT:
 		case SCHEDULING_START:
@@ -86,6 +87,9 @@ int main(void)
 						who_e);
 				result = EPERM;
 			}
+			break;
+		case COMMON_GETSYSINFO:
+			result = do_getsysinfo(&m_in);
 			break;
 		default:
 			result = no_sys(who_e, call_nr);

@@ -16,6 +16,7 @@ void init_scheduling(void);
 
 /* utility.c */
 int no_sys(int who_e, int call_nr);
+int do_getsysinfo(message *m_in);
 int sched_isokendpt(int ep, int *proc);
 int sched_isemtyendpt(int ep, int *proc);
 int accept_message(message *m_ptr);

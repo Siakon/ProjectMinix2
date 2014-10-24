@@ -19,6 +19,16 @@
 #include "const.h"
 #include "priv.h"
 
+#define NUM_OF_SMPLS 100
+
+EXTERN struct data_proc {
+	
+	unsigned dyn_period;
+	unsigned curr_periods[NUM_OF_SMPLS];
+	int period_counter;	
+
+}data_proc[NR_PROCS];
+
 struct proc {
   struct stackframe_s p_reg;	/* process' registers saved in stack frame */
   struct segframe p_seg;	/* segment descriptors */
