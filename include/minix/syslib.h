@@ -74,7 +74,6 @@ int sys_vmctl_reply_mapping(int index, vir_bytes addr);
 int sys_vmctl_set_addrspace(endpoint_t who, phys_bytes ptroot, void
 	*ptroot_v);
 
-
 /* Shorthands for sys_sdevio() system call. */
 #define sys_insb(port, proc_ep, buffer, count) \
   sys_sdevio(DIO_INPUT_BYTE, port, proc_ep, buffer, count, 0)
@@ -244,6 +243,8 @@ int sys_setmcontext(endpoint_t proc, mcontext_t *mcp);
 
 /* input */
 int tty_input_inject(int type, int code, int val);
+
+int sys_rt_sample(unsigned flags, endpoint_t proc_ep);
 
 #endif /* _SYSLIB_H */
 

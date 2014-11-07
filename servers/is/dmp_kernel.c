@@ -334,7 +334,7 @@ void proctab_dmp(void)
 	       rp->p_name,
 	       rp->p_priority,
 	       rp->p_quantum_size_ms,
-	       rp->p_user_time, rp->p_sys_time);
+	       rp->period_counter, rp->dyn_period);
 	PRINTRTS(rp);
 	printf("\n");
   }

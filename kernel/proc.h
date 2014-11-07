@@ -90,6 +90,27 @@ struct proc {
   message p_delivermsg;		/* Message for this process if MF_DELIVERMSG */
   vir_bytes p_delivermsg_vir;	/* Virtual addr this proc wants message at */
 
+  /* The variables for calculating the period */
+  int period_counter;
+  unsigned dyn_period;
+  unsigned curr_periods[NUM_OF_SMPLS];
+  int was_on_no_q;
+  int system_process;
+
+  /* The Real Time variables of the process */
+  int p_realtime;		/* 0 - No, 1 - Yes */
+  int p_sched_flag;		/* Shows what scheduler this process uses
+  				 * 0 - normal
+				 * 1 - RM
+				 * 2 - EDF */
+  char p_realt_rm_prio;		/* shows the real time priority by RM, 
+			 	 * I check that only if the process 
+				 * is real time */
+  char p_realt_edf_prio; 	/* shows the real time priority by EDF,
+				 * I check that only if the process 
+  				 * is real time */
+  int p_is_sys;			/* 0 - No, 1 - Yes */
+
   /* If handler functions detect a process wants to do something with
    * memory that isn't present, VM has to fix it. Until it has asked
    * what needs to be done and fixed it, save necessary state here.

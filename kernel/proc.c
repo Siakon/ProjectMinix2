@@ -129,7 +129,9 @@ void proc_init(void)
 		rp->p_scheduler = NULL;		/* no user space scheduler */
 		rp->p_priority = 0;		/* no priority */
 		rp->p_quantum_size_ms = 0;	/* no quantum size */
-
+		rp->period_counter = 0;		/* initialize the period cnt */
+		rp->system_process = 0;
+		
 		/* arch-specific initialization */
 		arch_proc_reset(rp);
 	}
@@ -1723,8 +1725,32 @@ static struct proc * pick_proc(void)
 		continue;
 	}
 	assert(proc_is_runnable(rp));
+	
 	if (priv(rp)->s_flags & BILLABLE)	 	
 		get_cpulocal_var(bill_ptr) = rp; /* bill for system time */
+
+	if(priv(rp)->s_flags & SYS_PROC){
+	rp->p_is_sys = 1;
+	if( rp->period_counter == NUM_OF_SMPLS){
+		int k;
+		int count_p = 0;
+		for( k=0; k<NUM_OF_SMPLS; k++){
+			count_p += rp->curr_periods[k];
+		}
+		rp->dyn_period = 0;
+		rp->dyn_period = count_p/NUM_OF_SMPLS;
+		rp->period_counter++;
+		rp->system_process = 1;
+		rp->p_realtime = 1;
+	}else if( rp->period_counter < NUM_OF_SMPLS && rp->period_counter >= 0 ){
+		rp->curr_periods[rp->period_counter] = 0;
+		rp->curr_periods[rp->period_counter] = rp->p_accounting.time_in_queue + rp->p_cycles;
+		rp->period_counter++;
+	}else{
+		rp->p_is_sys = 0;
+	}
+
+	}
 	return rp;
   }
   return NULL;
@@ -1824,6 +1850,22 @@ void proc_no_time(struct proc * p)
 		 * be renewed. In fact, they by pass scheduling
 		 */
 		p->p_cpu_time_left = ms_2_cpu_time(p->p_quantum_size_ms);
+		
+		/*
+		if(p->period_counter == NUM_OF_SMPLS){
+			int count_p = 0;
+			p->dyn_period = 0;
+			for(int k=0; k<NUM_OF_SMPLS; k++){
+				count_p += p->curr_periods[k]; 
+			}
+			p->dyn_period = count_p/NUM_OF_SMPLS;
+			p->period_counter++;
+		}else if(p->period_counter < NUM_OF_SMPLS && p->period_counter <= 0){
+			p->curr_periods[p->period_counter] = 0;
+			p->curr_periods[p->period_counter] = p->p_cpu_time_left + p->p_accounting.time_in_queue;
+			p->period_counter++;
+		}*/
+		p->was_on_no_q++;
 #if DEBUG_RACE
 		RTS_SET(p, RTS_PREEMPTED);
 		RTS_UNSET(p, RTS_PREEMPTED);

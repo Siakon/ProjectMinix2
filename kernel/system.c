@@ -261,6 +261,7 @@ void system_init(void)
   /* Scheduling */
   map(SYS_SCHEDULE, do_schedule);	/* reschedule a process */
   map(SYS_SCHEDCTL, do_schedctl);	/* change process scheduler */
+  map(SYS_RT_SAMPLE, do_rt_sample);
 
 }
 /*===========================================================================*

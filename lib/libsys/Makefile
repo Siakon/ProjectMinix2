@@ -74,6 +74,7 @@ SRCS+=  \
 	sys_vsafecopy.c \
 	sys_vtimer.c \
 	sys_vumap.c \
+	sys_rrt_sample.c \
 	taskcall.c \
 	tickdelay.c \
 	timers.c \
@@ -106,7 +107,7 @@ SRCS+=	pci_attr_r16.c \
 	pci_rescan_bus.c \
 	pci_reserve.c \
 	pci_set_acl.c \
-	pci_slot_name.c
+	pci_slot_name.c 
 .endif
 
 .if ${MKCOVERAGE} != "no"

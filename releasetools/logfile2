@@ -422,7 +422,6 @@ includes ===> share/zoneinfo
     compile  kernel/do_schedule.o
     compile  kernel/do_schedctl.o
     compile  kernel/do_statectl.o
-    compile  kernel/do_rt_sample.o
     compile  kernel/do_devio.o
     compile  kernel/do_vdevio.o
     compile  kernel/watchdog.o
@@ -1085,5 +1084,5 @@ install ===> virtio_net
 install ===> ramdisk
 install ===> memory
     install  /usr/sbin/memory
-rm /dev/c0d0p0s0:/boot/minix/3.2.1r35-841b3d2
+rm /dev/c0d0p0s0:/boot/minix/3.2.1r20-841b3d2
 Done.
