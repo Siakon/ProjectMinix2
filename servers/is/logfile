@@ -1,0 +1,10 @@
+    compile  is/main.o
+    compile  is/dmp.o
+    compile  is/dmp_kernel.o
+    compile  is/dmp_pm.o
+    compile  is/dmp_fs.o
+    compile  is/dmp_rs.o
+    compile  is/dmp_ds.o
+    compile  is/dmp_vm.o
+       link  is/is
+    install  /sbin/is

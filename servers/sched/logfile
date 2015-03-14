@@ -1,0 +1,15 @@
+    compile  sched/main.o
+    compile  sched/schedule.o
+schedule.c:366:39: warning: incompatible pointer to integer conversion assigning to 'unsigned int' from 'void *'; 
+                temproc->curr_periods[NUM_OF_SMPLS] = NULL;
+                                                    ^ ~~~~
+schedule.c:366:3: warning: array index 100 is past the end of the array (which contains 100 elements) [-Warray-bounds]
+                temproc->curr_periods[NUM_OF_SMPLS] = NULL;
+                ^                     ~~~~~~~~~~~~
+./schedproc.h:30:2: note: array 'curr_periods' declared here
+        unsigned curr_periods[NUM_OF_SMPLS];
+        ^
+2 warnings generated.
+    compile  sched/utility.o
+       link  sched/sched
+    install  /usr/sbin/sched
