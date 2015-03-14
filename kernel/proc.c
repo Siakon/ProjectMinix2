@@ -1754,11 +1754,21 @@ void dequeue(struct proc *rp)
  * queue of the cpu the process is currently assigned to.
  */
   int q = rp->p_priority;		/* queue to use */
+  int min_period = 0;			/* The minimum period */
   struct proc **xpp;			/* iterate over queue */
   struct proc *prev_xp;
+
+  /* Variables needed for puting a special proccess to 
+   * the head of the queue if neede */
+  struct proc **xpp_special;	/* iterate over queue */
+  struct proc *prev_xp_special;
+  struct proc *first_proc;		/* The first proc for helping
+  								 * putting procs to head */
+
   u64_t tsc, tsc_delta;
 
   struct proc **rdy_tail;
+  struct proc **rdy_head;
 
   assert(proc_ptr_ok(rp));
   assert(!proc_is_runnable(rp));
@@ -1767,14 +1777,29 @@ void dequeue(struct proc *rp)
   assert (!iskernelp(rp) || *priv(rp)->s_stack_guard == STACK_GUARD);
 
   rdy_tail = get_cpu_var(rp->p_cpu, run_q_tail);
+  rdy_head = get_cpu_var(rp->p_cpu, run_q_head);
+
+  /* Check if the process is a whitelisted one*/
+
+    int listed_proc = 0;
+	if(policy_is_ok == 1){
+		for(int i=0; i < 6; i++){
+			if(rp->p_endpoint == proc_whitelist[i]){
+				listed_proc = 1;
+				break;
+			}
+		}
+	}
 
   /* Now make sure that the process is not in its ready queue. Remove the 
    * process if it is found. A process can be made unready even if it is not 
    * running by being sent a signal that kills it.
+   
    */
-  prev_xp = NULL;				
+  prev_xp = NULL;
   for (xpp = get_cpu_var_ptr(rp->p_cpu, run_q_head[q]); *xpp;
 		  xpp = &(*xpp)->p_nextready) {
+  	
       if (*xpp == rp) {				/* found process to remove */
           *xpp = (*xpp)->p_nextready;		/* replace with next chain */
           if (rp == rdy_tail[q]) {		/* queue tail removed */
@@ -1785,21 +1810,50 @@ void dequeue(struct proc *rp)
       }
       prev_xp = *xpp;				/* save previous in chain */
   }
-	
-	int listed_proc = 0;
-	if(policy_is_ok == 1){
-		for(int i=0; i < 6; i++){
-			if(rp->p_endpoint == proc_whitelist[i]){
-				rp->p_priority = 2;
-				listed_proc = 1;
-				break;
-			}
-		}
-		if(listed_proc == 0){
-			if(rp->p_priority == 2) rp->p_priority = 3;
-		}
+
+  /* If a whitelisted process that is just dequeued is on the head of the
+   * queue, the system must search and find a new suitable process for the
+   * head of this queue.*/
+
+    if(policy_is_ok == 1 && listed_proc == 1 && rp == rdy_head[q]){
+
+    	/* Determine the new head of the queue */
+    	rdy_head = get_cpu_var(rp->p_cpu, run_q_head);
+
+    	/* Start the process of finding a new head for the queue */
+	  	xpp_special = get_cpu_var_ptr(rp->p_cpu, run_q_head[q]);
+	  	first_proc = *xpp_special;
+	  	prev_xp_special = first_proc;
+	  	min_period = (*xpp_special)->dyn_period;
+	  	xpp_special = &(*xpp_special)->p_nextready;
+
+	  	for (xpp_special= get_cpu_var_ptr(rp->p_cpu, run_q_head[q]); *xpp_special; 
+	  		xpp_special = &(*xpp_special)->p_nextready) {
+
+		  		if((*xpp_special)->dyn_period < min_period){
+
+		  			min_period = (*xpp_special)->dyn_period;
+		  			/* Remove the proc from the queue */
+		  			prev_xp_special->p_nextready = (*xpp_special)->p_nextready;
+		  			/* Put the proc to the head of the queue */
+		  			(*xpp_special)->p_nextready = first_proc;
+		  			prev_xp_special = prev_xp_special->p_nextready;
+
+		  		}else{
+		  			prev_xp_special = *xpp_special;				/* save previous in chain */
+		  		}
+		  		
+	  	}
+
+    }
+
+  /* After the dequeue make sure the processes retain their respective
+   * queues. If not corrent them! */
+	if(policy_is_ok == 1 && listed_proc == 1){
+		rp->p_priority = 2;
+	}else if(policy_is_ok == 1 && listed_proc == 0){
+		if(rp->p_priority == 2) rp->p_priority = 3;
 	}
-	
 	
   /* Process accounting for scheduling */
   rp->p_accounting.dequeues++;
@@ -1834,11 +1888,11 @@ static struct proc * pick_proc(void)
  */
   register struct proc *rp;			/* process to run */
   struct proc **rdy_head;
-  struct proc **xpp;			/* iterate over queue with pointer pointer*/
+  //struct proc **xpp;			/* iterate over queue with pointer pointer*/
   int q;				/* iterate over queues */
   
-  int lowest_period = 0;
-  int period;
+  //int lowest_period = 0;
+  //int period;
   
   /* Check each of the scheduling queues for ready processes. The number of
    * queues is defined in include/minix/config.h, and priorities are set in the task table.
